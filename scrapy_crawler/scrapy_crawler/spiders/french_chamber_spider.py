@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 import scrapy
-import time
 from urllib.parse import urljoin
+
 from ..helper.text_processing import TextProcessing
 
 class FrenchChamberSpider(scrapy.Spider):
+    """This class is a spider to crawl the French Chamber Hongkong website.
+    The informations that are scraped are company name, logo URL, location, etc
+    which also include details regarding employees (first and last name,
+    job title, photo profile URL)
+    """
     name = 'frenchchamber'
-    start_urls = ['http://www.fccihk.com/members-directory/']
+    # start_urls = ['http://www.fccihk.com/members-directory/']
 
-    # start_urls = ['http://www.fccihk.com/members-directory/'] +\
-    #     ['http://www.fccihk.com/members-directory?page=%s&activity=all&search=all&membership=all' % page for page in range(1,20)]
+    start_urls = ['http://www.fccihk.com/members-directory/'] +\
+        ['http://www.fccihk.com/members-directory?page=%s&activity=all&search=all&membership=all' % page for page in range(1,20)]
     
     do_text_postprocessing = True
+    text_proc = TextProcessing()
 
     def parse(self, response):
         company_relative_links = response.css('a.slide-cont::attr(href)').extract()
@@ -48,68 +54,36 @@ class FrenchChamberSpider(scrapy.Spider):
             yield company_info
 
     def text_postprocessing(self, company_info):
-        # put line(s) of address into one line,
-        # and strip all unnecessary \t and \n
-        # in the front and back side of the address info
-        if len(company_info['loc']) > 1:
-            company_info['loc'] = '\n'.join([addr_per_line.strip() for addr_per_line in company_info['loc']])
-        else:
-            company_info['loc']  = company_info['loc']
-        company_info['loc'] = company_info['loc'].strip()
+        # put line(s) of informations into one line,
+        # and strip all unnecessary \t and \n located at
+        # the front and back side of the address info
+        KEY_LIST_TO_BE_CONCATENATED = ['loc', 'desc']
+        for key in KEY_LIST_TO_BE_CONCATENATED:
+            company_info[key] = self.text_proc.string_concatenate_list_of_informations(company_info[key])
 
-        if len(company_info['desc']) > 1:
-            company_info['desc'] = '\n'.join([addr_per_line.strip() for addr_per_line in company_info['desc']])
-        else:
-            company_info['desc']  = company_info['desc']
-        company_info['desc'] = company_info['desc'].strip()
-
-        # the "contact_info" sometimes filled with
+        # the "contact" sometimes filled with
         # unnecessary empty <li> that contains merely whitespace
-        contact_info = []
-        for line in company_info['contact']:
-            line = line.strip()
-            if len(line) > 0:
-                contact_info.append(line)
-        company_info['contact'] = contact_info
+        KEY_LIST_REMOVE_NULL_ELEMENTS = ['contact']
+        for key in KEY_LIST_REMOVE_NULL_ELEMENTS:
+            company_info[key] = self.text_proc.remove_null_element_within_list(company_info[key])
 
         # change list (that will consists of only one element) to string 
         # e.g. : change ```  'name': ['David']``` into ```'name' : 'David`  ```
         KEY_LIST_TO_STRING = ['name', 'logo_url']
         for key in KEY_LIST_TO_STRING:
-            if company_info[key] != [] and company_info[key] != None:
-                company_info[key] = company_info[key][0]
-            else:
-                company_info[key] = None
+            company_info[key] = self.text_proc.convert_one_elm_list_into_string(company_info[key])
 
         # extract integer from string
         # e.g. : extract ```23``` from ```  '23 worldwide' ``` string.
         KEY_LIST_TO_BE_EXCTRACTED = ['year_established', 'local_employee', 'worldwide_employee']
         for key in KEY_LIST_TO_BE_EXCTRACTED:
-            if company_info[key] == []:
-                company_info[key] = None
-            else:
-                to_int = [int(s) for s in company_info[key][0].split() if s.isdigit()]
-                if to_int == []:
-                    company_info[key] = None
-                else:
-                    company_info[key] = to_int
-        for key in KEY_LIST_TO_BE_EXCTRACTED:
-            print(company_info[key])
-            if company_info[key] != [] and company_info[key] != None:
-                company_info[key] = company_info[key][0]
-            else:
-                company_info[key] = None
-
+            company_info[key] = self.text_proc.extract_integer_from_string(company_info[key])
 
         # in employee_info, change list (that will consists of only one element) to string 
         # e.g. : change ```  'name': ['David']``` into ```'name' : 'David`  ```
         KEY_LIST_TO_STRING = ['job_title', 'first_name', 'last_name', 'photo_url']
         for employee_no in range(len(company_info['employees'])):
             for key in KEY_LIST_TO_STRING:
-                if company_info['employees'][employee_no][key] == []:
-                    # this happen if an employee doesn't have photo_url for example (photo_url = [])
-                    company_info['employees'][employee_no][key] = ""
-                else:
-                    company_info['employees'][employee_no][key] = company_info['employees'][employee_no][key][0]
+                company_info['employees'][employee_no][key] = self.text_proc.convert_one_elm_list_into_string(company_info['employees'][employee_no][key])
 
         return company_info
