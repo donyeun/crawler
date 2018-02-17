@@ -18,3 +18,20 @@ pip3 install -r requirements.txt
 ```
 scrapy crawl frenchchamber -t json --nolog -o - > frenchchamber.json
 ```
+
+## JSON Attributes
+```
+name
+logo_url
+loc
+contact
+desc
+employees
+  first_name
+  last_name
+  job_title
+  photo_url
+year_established
+local_employee
+worldwide_employee
+```
