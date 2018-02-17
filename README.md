@@ -5,10 +5,16 @@ The data that the crawler returned are raw and may contained unnecessary content
 
 ## How to Run
 1. Go to the folder where the code is being located.
-```cd scrapy_crawler```
+```
+cd scrapy_crawler
+```
 
 2. Install all the necessary Python packages. Please use `sudo` if necessary.
-```pip3 install -r requirements.txt```
+```
+pip3 install -r requirements.txt
+```
 
 3. Run The `frenchchamber` crawler and save the resulted data into `frenchchamber.json`.
-```scrapy crawl frenchchamber -t json --nolog -o - > frenchchamber.json```
+```
+scrapy crawl frenchchamber -t json --nolog -o - > frenchchamber.json
+```
