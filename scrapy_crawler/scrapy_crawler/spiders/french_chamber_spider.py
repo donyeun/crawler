@@ -11,11 +11,8 @@ class FrenchChamberSpider(scrapy.Spider):
     job title, photo profile URL)
     """
     name = 'frenchchamber'
-    # start_urls = ['http://www.fccihk.com/members-directory/']
-
     start_urls = ['http://www.fccihk.com/members-directory/'] +\
         ['http://www.fccihk.com/members-directory?page=%s&activity=all&search=all&membership=all' % page for page in range(1,20)]
-    
     do_text_postprocessing = True
     text_proc = TextProcessing()
 
@@ -24,7 +21,6 @@ class FrenchChamberSpider(scrapy.Spider):
         for link in company_relative_links:
             company_profile_url = urljoin(response.url, link)
             yield scrapy.Request(company_profile_url, callback=self.parse_company_profile)
-
 
     def parse_company_profile(self, response):
         employee_html_info = response.css('div.members li')
